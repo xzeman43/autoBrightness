@@ -7,14 +7,21 @@ from tkinter import *
 import paho.mqtt.client as mqtt
 from monitorcontrol import *
 
-listen=False
-monitor_num=len(get_monitors())
+listen = False
+monitor_num = len(get_monitors())
+print(monitor_num)
 
 
 def set_luminance(luminance, monitor):
     mon = get_monitors()[monitor]
     with mon:
         mon.set_luminance(int(luminance))
+
+
+def set_contrast(contrast, monitor):
+    mon = get_monitors()[monitor]
+    with mon:
+        mon.set_contrast(int(contrast))
 
 
 def on_connect(client, userdata, flags, rc):
@@ -31,17 +38,17 @@ def on_message(client, userdata, msg):
                 print(monitor.set_luminance(int(msg.payload)))
 
 
-def mqtt_thread(name, brightness_value):
-    client = mqtt.Client(userdata=brightness_value)
+def mqtt_thread(name, b_value):
+    client = mqtt.Client(userdata=b_value)
     client.on_connect = on_connect
     client.on_message = on_message
     client.username_pw_set("admin", "FritzBox2")
     client.connect("192.168.1.221", 1883, 60)
     client.loop_forever()
 
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-
 
     window = Tk()
     window.geometry("700x300")
@@ -53,9 +60,9 @@ if __name__ == '__main__':
     window.title("autoBrightness awesomness")
 
     photoOff = PhotoImage(file=r"power-off.png")
-    photoOff = photoOff.subsample(7,7)
+    photoOff = photoOff.subsample(7, 7)
     photoOn = PhotoImage(file=r"power-on.png")
-    photoOn = photoOn.subsample(7,7)
+    photoOn = photoOn.subsample(7, 7)
 
 
     def clicked():
@@ -71,10 +78,25 @@ if __name__ == '__main__':
     # power_btn.grid(column=2, row=0)
     power_btn.place(x=650, y=0, width=50, height=50)
 
-    brightness_label = Label(window, text="Brightness")
-    brightness_label.place(x=0, y=80)
-    brightness_slider = Scale(window, from_=0, to=100, command=lambda value, monitor_numik=0: set_luminance(value, monitor_numik))
-    brightness_slider.place(x=0, y=100)
+    slider_pos = 0
+    for i in range(monitor_num):
+        mon_it = get_monitors()[i]
+        with mon_it:
+            code = vcp.VCPCode("image_luminance")
+            # Not sure how to do this better
+            if mon_it._get_code_maximum(code) != 0:
+                brightness_label = Label(window, text="Brightness")
+                brightness_label.place(x=slider_pos*50, y=80)
+                brightness_slider = Scale(window, from_=0, to=100, command=lambda value, monitor_numik=i: set_luminance(value, monitor_numik))
+                brightness_slider.set(int(mon_it.get_luminance()))
+                brightness_slider.place(x=slider_pos*50, y=100)
+                slider_pos += 1
+                contrast_label = Label(window, text="Contrast")
+                contrast_label.place(x=slider_pos*75, y=80)
+                contrast_slider = Scale(window, from_=0, to=100, command=lambda value, monitor_numik=i: set_contrast(value, monitor_numik))
+                contrast_slider.set(int(mon_it.get_contrast()))
+                contrast_slider.place(x=slider_pos*75, y=100)
+                slider_pos += 1
 
     x = threading.Thread(target=mqtt_thread, args=(1, data_dict))
     x.start()
