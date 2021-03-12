@@ -2,6 +2,7 @@
 
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import os
 import threading
 from tkinter import *
 import paho.mqtt.client as mqtt
@@ -10,6 +11,18 @@ from monitorcontrol import *
 listen = False
 monitor_num = len(get_monitors())
 print(monitor_num)
+
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 
 def set_luminance(luminance, monitor):
@@ -59,9 +72,10 @@ if __name__ == '__main__':
     data_dict = {'brightness_value': brightness_value}
     window.title("autoBrightness awesomness")
 
-    photoOff = PhotoImage(file=r"power-off.png")
+    photoOffImg = resource_path("figures/power-off.png")
+    photoOff = PhotoImage(file=photoOffImg)
     photoOff = photoOff.subsample(7, 7)
-    photoOn = PhotoImage(file=r"power-on.png")
+    photoOn = PhotoImage(file=resource_path("figures/power-on.png"))
     photoOn = photoOn.subsample(7, 7)
 
 
